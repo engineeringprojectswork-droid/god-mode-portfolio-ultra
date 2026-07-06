@@ -100,11 +100,21 @@ const activeMeta = THEMES[active];
   picker?.querySelectorAll('[data-close]').forEach((el) => el.addEventListener('click', closePicker));
 
   // ---- keyboard: G opens, Esc closes, arrows switch theme ----
+  function trapTab(e: KeyboardEvent) {
+    if (!picker) return;
+    const f = Array.from(picker.querySelectorAll<HTMLElement>('a[href], button:not([disabled])'));
+    if (!f.length) return;
+    const first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
   addEventListener('keydown', (e) => {
     const tag = (e.target as HTMLElement)?.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-    if (e.key === 'Escape' && picker && !picker.hidden) { closePicker(); return; }
-    if ((e.key === 'g' || e.key === 'G') && (picker?.hidden ?? true)) { e.preventDefault(); openPicker(); return; }
+    const open = !!picker && !picker.hidden;
+    if (e.key === 'Escape' && open) { closePicker(); return; }
+    if ((e.key === 'g' || e.key === 'G') && !open) { e.preventDefault(); openPicker(); return; }
+    if (open) { if (e.key === 'Tab') trapTab(e); return; } // keep focus + arrows inside the modal
     if (e.key === 'ArrowRight') gotoRel(1);
     if (e.key === 'ArrowLeft') gotoRel(-1);
   });

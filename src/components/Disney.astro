@@ -251,7 +251,7 @@ const covers = ['#1a3a8a', '#7a3f9e', '#b07a1f', '#2a7a8a', '#8a2a5a', '#3a5aaa'
     // boot fireworks — skip entirely on repeat visits
     const fw = document.getElementById('disneyFw') as HTMLCanvasElement | null;
     let seenBoot = false;
-    try { seenBoot = sessionStorage.getItem('gm-boot-disney') === '1'; } catch {}
+    try { seenBoot = sessionStorage.getItem('gm-dz-fw-seen') === '1'; } catch {}
     if (fw && seenBoot) { fw.remove(); }
     else if (fw) {
       const ctx = fw.getContext('2d')!;
@@ -282,7 +282,7 @@ const covers = ['#1a3a8a', '#7a3f9e', '#b07a1f', '#2a7a8a', '#8a2a5a', '#3a5aaa'
         if (parts.length || n < 5) { raf = requestAnimationFrame(anim); }
         else { clearTimeout(safety); stop(); }
       })();
-      try { sessionStorage.setItem('gm-boot-disney', '1'); } catch {}
+      try { sessionStorage.setItem('gm-dz-fw-seen', '1'); } catch {}
     }
   })();
 </script>

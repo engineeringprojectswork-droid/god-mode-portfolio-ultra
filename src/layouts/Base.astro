@@ -178,16 +178,18 @@ const HUB_PREVIEW_FONTS =
           if (el.dataset.done) return; el.dataset.done = '1';
           const raw = el.dataset.countup || '0';
           const num = parseFloat(raw.replace(/[^0-9.]/g, ''));
-          if (!isFinite(num) || reduce) { el.textContent = raw; return; }
           const prefix = el.dataset.prefix || '';
           const suffix = el.dataset.suffix || '';
+          const fmtVal = (v: number) => prefix + (v >= 1000
+            ? Math.round(v).toLocaleString()
+            : (Number.isInteger(num) ? Math.round(v).toString() : v.toFixed(2))) + suffix;
+          if (!isFinite(num)) { el.textContent = raw; return; }
+          if (reduce) { el.textContent = fmtVal(num); return; } // formatted + affixed, no animation
           const dur = 1100; const start = performance.now();
-          const fmt = num >= 1000;
           function step(now: number) {
             const p = Math.min(1, (now - start) / dur);
             const eased = 1 - Math.pow(1 - p, 3);
-            const v = num * eased;
-            el.textContent = prefix + (fmt ? Math.round(v).toLocaleString() : (Number.isInteger(num) ? Math.round(v).toString() : v.toFixed(2))) + suffix;
+            el.textContent = fmtVal(num * eased);
             if (p < 1) requestAnimationFrame(step);
           }
           requestAnimationFrame(step);
