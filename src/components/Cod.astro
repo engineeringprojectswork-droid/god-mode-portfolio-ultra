@@ -5,8 +5,12 @@ import { WORDMARKS } from '../lib/wordmarks';
 import AboutBlock from './AboutBlock.astro';
 import ContactBlock from './ContactBlock.astro';
 import FooterBlock from './FooterBlock.astro';
+import { firstPublicAsset, heroArtCandidates } from '../lib/assets';
+import { withBase } from '../lib/base';
 
 const t = THEMES.cod;
+// drop-in: add public/assets/hero/cod.{webp,jpg,png} and it appears behind the operator file automatically
+const heroArt = firstPublicAsset(heroArtCandidates('cod'));
 ---
 <div id="gm-boot" data-theme="cod" data-dur="2000" style="background:#0b0c0e">
   <div class="cod-boot">
@@ -24,6 +28,9 @@ const t = THEMES.cod;
 
 <main class="cod-wrap">
   <section class="cod-file">
+    {heroArt && (
+      <div class="cod-hero-art" aria-hidden="true" style={`background-image:url('${withBase(heroArt)}')`}></div>
+    )}
     <div class="cod-file-head">
       <span class="cod-redact">■■■■■■</span>
       <span class="cod-classified">OPERATOR FILE · CLASSIFIED</span>
@@ -119,7 +126,14 @@ const t = THEMES.cod;
   @keyframes gm-tracer { 0% { transform: translate3d(-200px, 0, 0); opacity: 0; } 10% { opacity: 1; } 60% { opacity: 1; } 100% { transform: translate3d(110vw, 0, 0); opacity: 0; } }
 
   .cod-wrap { max-width: 1160px; margin: 0 auto; padding: 78px 22px 120px; position: relative; z-index: 2; }
-  .cod-file { position: relative; border: 1px solid #33362e; border-left: 3px solid #FF7A00; background: rgba(20,21,24,.92); padding: 26px clamp(18px, 4vw, 34px) 30px; }
+  .cod-file { position: relative; border: 1px solid #33362e; border-left: 3px solid #FF7A00; background: rgba(20,21,24,.92); padding: 26px clamp(18px, 4vw, 34px) 30px; overflow: hidden; }
+  .cod-hero-art { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+    background-size: cover; background-position: right center; }
+  .cod-hero-art::before { content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, rgba(20,21,24,.98) 0%, rgba(20,21,24,.98) 40%, rgba(20,21,24,.55) 60%, transparent 75%); }
+  .cod-hero-art::after { content: ""; position: absolute; inset: 0;
+    background: linear-gradient(0deg, rgba(20,21,24,.98) 0%, transparent 32%); }
+  .cod-file > :not(.cod-hero-art) { position: relative; z-index: 1; }
   .cod-file-head { display: flex; align-items: center; gap: 12px; font-family: 'Share Tech Mono', monospace; margin-bottom: 16px; }
   .cod-redact { background: #2a2d26; color: #2a2d26; letter-spacing: -1px; user-select: none; }
   .cod-classified { color: #8FA31E; font-size: 11px; letter-spacing: .22em; }

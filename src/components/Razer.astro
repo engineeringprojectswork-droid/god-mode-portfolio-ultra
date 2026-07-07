@@ -5,8 +5,12 @@ import { WORDMARKS } from '../lib/wordmarks';
 import AboutBlock from './AboutBlock.astro';
 import ContactBlock from './ContactBlock.astro';
 import FooterBlock from './FooterBlock.astro';
+import { firstPublicAsset, heroArtCandidates } from '../lib/assets';
+import { withBase } from '../lib/base';
 
 const t = THEMES.razer;
+// drop-in: add public/assets/hero/razer.{webp,jpg,png} and it appears behind the hero automatically
+const heroArt = firstPublicAsset(heroArtCandidates('razer'));
 // count-up only where the metric is a clean number
 const cu = (v: string) => {
   const n = parseFloat(v.replace(/[^0-9.]/g, ''));
@@ -26,6 +30,9 @@ const cu = (v: string) => {
 
 <main class="rz-wrap">
   <section class="rz-hero">
+    {heroArt && (
+      <div class="rz-hero-art" aria-hidden="true" style={`background-image:url('${withBase(heroArt)}')`}></div>
+    )}
     <p class="rz-kicker rv">{t.copy.kicker}</p>
     <div class="rz-wordmark rv"><span class="rz-wordmark-inner" data-glitch set:html={WORDMARKS.razer}></span></div>
     <p class="rz-banner rv">{t.copy.banner}</p>
@@ -108,7 +115,17 @@ const cu = (v: string) => {
     background-size: 46px 46px; }
 
   .rz-wrap { max-width: 1160px; margin: 0 auto; padding: 80px 22px 120px; position: relative; z-index: 2; }
-  .rz-hero { padding: 20px 0 10px; }
+  .rz-hero { position: relative; padding: 20px 0 10px; overflow: hidden; }
+  .rz-hero > :not(.rz-hero-art) { position: relative; z-index: 1; }
+  .rz-hero-art { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+    background-size: cover; background-position: right center; }
+  .rz-hero-art::before { content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, #080808 0%, #080808 40%, rgba(8,8,8,.55) 60%, transparent 75%); }
+  .rz-hero-art::after { content: ""; position: absolute; inset: 0;
+    background:
+      linear-gradient(0deg, #080808 0%, transparent 32%),
+      linear-gradient(180deg, #080808 0%, transparent 18%),
+      linear-gradient(270deg, #080808 0%, transparent 14%); }
   .rz-kicker { color: #44D62C; font-family: 'Share Tech Mono', monospace; letter-spacing: .18em; font-size: 13px; margin-bottom: 14px; }
   .rz-wordmark { position: relative; }
   .rz-wordmark-inner { display: inline-block; position: relative; }

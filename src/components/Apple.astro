@@ -5,8 +5,12 @@ import { WORDMARKS } from '../lib/wordmarks';
 import AboutBlock from './AboutBlock.astro';
 import ContactBlock from './ContactBlock.astro';
 import FooterBlock from './FooterBlock.astro';
+import { firstPublicAsset, heroArtCandidates } from '../lib/assets';
+import { withBase } from '../lib/base';
 
 const t = THEMES.apple;
+// drop-in: add public/assets/hero/apple.{webp,jpg,png} and it appears behind the keynote hero automatically
+const heroArt = firstPublicAsset(heroArtCandidates('apple'));
 // soft floating orbs (Claude Design's appleOrbs)
 const orbs = [
   { x: 6, y: 10, s: 380, c: 'rgba(41,151,255,.20)', d: 19, dl: -4 },
@@ -33,6 +37,9 @@ const orbs = [
 <main class="ap-wrap">
   <!-- hero / keynote -->
   <section class="ap-hero">
+    {heroArt && (
+      <div class="ap-hero-art" aria-hidden="true" style={`background-image:url('${withBase(heroArt)}')`}></div>
+    )}
     <div class="ap-wordmark rv" set:html={WORDMARKS.apple}></div>
     <h1 class="ap-head rv">A whole marketing team.<br><span class="ap-grad">In one hire.</span></h1>
     <p class="ap-sub rv">{t.copy.lede}</p>
@@ -122,7 +129,14 @@ const orbs = [
   .ap-orbs > div { position: absolute; border-radius: 50%; filter: blur(16px); animation-name: gm-orb; animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
 
   .ap-wrap { position: relative; z-index: 2; }
-  .ap-hero { max-width: 1000px; margin: 0 auto; padding: clamp(78px,12vh,140px) 22px clamp(40px,7vh,86px); text-align: center; }
+  .ap-hero { position: relative; max-width: 1000px; margin: 0 auto; padding: clamp(78px,12vh,140px) 22px clamp(40px,7vh,86px); text-align: center; overflow: hidden; }
+  .ap-hero > :not(.ap-hero-art) { position: relative; z-index: 1; }
+  .ap-hero-art { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+    background-size: cover; background-position: right center; }
+  .ap-hero-art::before { content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, #000 0%, #000 40%, rgba(0,0,0,.55) 60%, transparent 75%); }
+  .ap-hero-art::after { content: ""; position: absolute; inset: 0;
+    background: linear-gradient(0deg, #000 0%, transparent 32%); }
   .ap-wordmark { width: min(320px, 60vw); margin: 0 auto 26px; }
   .ap-wordmark .wm { width: 100%; height: auto; }
   .ap-head { font-weight: 600; font-size: clamp(40px,8.4vw,96px); line-height: 1.02; letter-spacing: -.035em; color: #f5f5f7; margin: 0; }

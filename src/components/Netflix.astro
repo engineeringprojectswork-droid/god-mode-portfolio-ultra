@@ -5,8 +5,12 @@ import { WORDMARKS } from '../lib/wordmarks';
 import AboutBlock from './AboutBlock.astro';
 import ContactBlock from './ContactBlock.astro';
 import FooterBlock from './FooterBlock.astro';
+import { firstPublicAsset, heroArtCandidates } from '../lib/assets';
+import { withBase } from '../lib/base';
 
 const t = THEMES.netflix;
+// drop-in: add public/assets/hero/netflix.{webp,jpg,png} and it appears behind the billboard automatically
+const heroArt = firstPublicAsset(heroArtCandidates('netflix'));
 const currentYear = new Date().getFullYear();
 const personas = [
   { name: 'The Media Buyer', glyph: '🎯', c: '#E50914' },
@@ -32,6 +36,9 @@ const personas = [
 
 <!-- Billboard hero -->
 <header class="nf-billboard">
+  {heroArt && (
+    <div class="nf-hero-art" aria-hidden="true" style={`background-image:url('${withBase(heroArt)}')`}></div>
+  )}
   <div class="nf-poster" aria-hidden="true"></div>
   <div class="nf-spotlight" aria-hidden="true"></div>
   <div class="nf-fade" aria-hidden="true"></div>
@@ -130,6 +137,12 @@ const personas = [
 
   /* ---- billboard ---- */
   .nf-billboard { position: relative; min-height: 88vh; display: flex; align-items: flex-end; overflow: hidden; padding: 60px 0 40px; }
+  .nf-hero-art { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+    background-size: cover; background-position: right center; }
+  .nf-hero-art::before { content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, #141414 0%, #141414 40%, rgba(20,20,20,.55) 60%, transparent 75%); }
+  .nf-hero-art::after { content: ""; position: absolute; inset: 0;
+    background: linear-gradient(0deg, #141414 0%, transparent 32%); }
   .nf-poster {
     position: absolute; inset: -6% -6% -6% -6%; z-index: 0;
     background:

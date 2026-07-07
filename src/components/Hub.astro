@@ -3,6 +3,12 @@ import { profile } from '../data/profile';
 import { THEMES, BRAND_THEMES, type ThemeId } from '../lib/themes';
 import { WORDMARKS } from '../lib/wordmarks';
 import { withBase } from '../lib/base';
+import { firstPublicAsset } from '../lib/assets';
+
+// drop-in: add public/assets/mohamed-emblem.glb and the hub gets a real WebGL crest
+// (emblem-mark.png is the no-WebGL fallback)
+const emblemGlb = firstPublicAsset(['assets/mohamed-emblem.glb']);
+const emblemImg = firstPublicAsset(['assets/emblem-mark.png']);
 import StatGrid from './StatGrid.astro';
 import FlagGrid from './FlagGrid.astro';
 import AboutBlock from './AboutBlock.astro';
@@ -38,6 +44,10 @@ function countAttrs(value: string) {
 
 <main class="gm-wrap">
   <h1 class="gm-visually-hidden">Mohamed Mahmoud — God Mode Portfolio</h1>
+  {emblemGlb && (
+    <div class="hub-emblem rv d1" id="hub-emblem" aria-hidden="true"
+         data-glb={withBase(emblemGlb)} data-fallback={emblemImg ? withBase(emblemImg) : ''}></div>
+  )}
   <p class="gm-kicker rv d1">{hub.copy.kicker}</p>
   <div class="gm-wordmark rv d2" set:html={WORDMARKS.hub} aria-hidden="true"></div>
   <p class="gm-banner rv d3">{profile.identity.tagline}</p>
@@ -106,6 +116,14 @@ function countAttrs(value: string) {
   @keyframes hub-pop { to { transform: rotate(45deg) scale(1); } }
   @keyframes hub-fade { to { opacity: 1; } }
 
+  /* 3D crest (WebGL medallion; PNG fallback) — fixed box so it never shifts layout */
+  .hub-emblem {
+    width: clamp(140px, 22vw, 200px); height: clamp(140px, 22vw, 200px);
+    margin: 0 0 -4px -14px; position: relative;
+  }
+  .hub-emblem canvas, .hub-emblem img { display: block; width: 100%; height: 100%; }
+  .hub-emblem img { object-fit: contain; filter: drop-shadow(0 12px 34px rgba(122, 102, 255, .28)); }
+
   /* identity character-select */
   .hub-select { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; margin-top: 8px; }
   .hub-card {
@@ -164,3 +182,106 @@ function countAttrs(value: string) {
     .hub-boot-diamond { width: 54px; height: 54px; }
   }
 </style>
+
+<script>
+  // Real-WebGL hub crest: lazy-loads three.js off the critical path, renders the
+  // metallic M medallion with studio reflections, and degrades to the flat PNG
+  // mark whenever WebGL / the GLB / the chunk fails.
+  (function emblem() {
+    const host = document.getElementById('hub-emblem');
+    if (!host) return;
+    const glbUrl = host.dataset.glb;
+    if (!glbUrl) return;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const fallback = () => {
+      const src = host.dataset.fallback;
+      if (!src || host.firstChild) return;
+      const img = new Image();
+      img.src = src;
+      img.alt = '';
+      host.appendChild(img);
+    };
+
+    const start = async () => {
+      try {
+        const [THREE, { GLTFLoader }, { RoomEnvironment }] = await Promise.all([
+          import('three'),
+          import('three/addons/loaders/GLTFLoader.js'),
+          import('three/addons/environments/RoomEnvironment.js'),
+        ]);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.setSize(host.clientWidth, host.clientHeight);
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 0.9;
+
+        const scene = new THREE.Scene();
+        scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+        scene.environmentIntensity = 0.55;
+
+        // env light alone is too even — the flat-shaded M disappears into the
+        // medallion; a hard key + cool rim give the relief its contrast
+        const key = new THREE.DirectionalLight(0xffffff, 1.8);
+        key.position.set(2.5, 3.5, 4);
+        scene.add(key);
+        const rim = new THREE.DirectionalLight(0x88aaff, 0.9);
+        rim.position.set(-3, -1.5, -2.5);
+        scene.add(rim);
+
+        // GLB is Y-up, +Z facing, normalized to a 2-unit box and fully metallic —
+        // the RoomEnvironment above is what makes it read as metal.
+        const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 10);
+        camera.position.set(0, 0, 3.4);
+
+        const gltf = await new GLTFLoader().loadAsync(glbUrl);
+        const model = gltf.scene;
+        // the GLB ships bright chrome; re-material to gunmetal so the white
+        // room reflections don't blow out and the M relief stays readable
+        model.traverse((o) => {
+          const m = (o as { material?: { color?: { setHex(h: number): void }; roughness?: number } }).material;
+          if (m && m.color) { m.color.setHex(0x878e9c); m.roughness = 0.34; }
+        });
+        scene.add(model);
+        host.appendChild(renderer.domElement);
+
+        let tiltX = 0, tiltY = 0, visible = true, raf = 0;
+        const t0 = performance.now();
+        const render = () => {
+          raf = 0;
+          const t = (performance.now() - t0) / 1000;
+          model.rotation.y = -0.18 + Math.sin(t * 0.45) * 0.5 + tiltX;
+          model.rotation.x = 0.18 + Math.sin(t * 0.3) * 0.06 + tiltY;
+          renderer.render(scene, camera);
+          if (!reduce && visible && !document.hidden) raf = requestAnimationFrame(render);
+        };
+        const kick = () => { if (!raf) raf = requestAnimationFrame(render); };
+
+        if (reduce) {
+          // single styled frame, no motion
+          model.rotation.set(0.12, -0.35, 0);
+          renderer.render(scene, camera);
+        } else {
+          kick();
+          window.addEventListener('pointermove', (e) => {
+            const r = host.getBoundingClientRect();
+            tiltX = Math.max(-0.5, Math.min(0.5, (e.clientX - (r.left + r.width / 2)) / window.innerWidth * 1.2));
+            tiltY = Math.max(-0.3, Math.min(0.3, (e.clientY - (r.top + r.height / 2)) / window.innerHeight * 0.8));
+          }, { passive: true });
+          document.addEventListener('visibilitychange', () => { if (!document.hidden) kick(); });
+          new IntersectionObserver((es) => { visible = es[0].isIntersecting; if (visible) kick(); }, { threshold: 0 }).observe(host);
+        }
+        window.addEventListener('resize', () => {
+          renderer.setSize(host.clientWidth, host.clientHeight);
+          if (reduce) renderer.render(scene, camera); else kick();
+        }, { passive: true });
+      } catch {
+        fallback();
+      }
+    };
+
+    if ('requestIdleCallback' in window) requestIdleCallback(() => { void start(); }, { timeout: 2500 });
+    else setTimeout(() => { void start(); }, 600);
+  })();
+</script>

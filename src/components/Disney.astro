@@ -5,9 +5,13 @@ import { WORDMARKS } from '../lib/wordmarks';
 import AboutBlock from './AboutBlock.astro';
 import ContactBlock from './ContactBlock.astro';
 import FooterBlock from './FooterBlock.astro';
+import { firstPublicAsset, heroArtCandidates } from '../lib/assets';
+import { withBase } from '../lib/base';
 
 const t = THEMES.disney;
 const covers = ['#1a3a8a', '#7a3f9e', '#b07a1f', '#2a7a8a', '#8a2a5a', '#3a5aaa'];
+// drop-in: add public/assets/hero/disney.{webp,jpg,png} and it appears behind the billboard automatically
+const heroArt = firstPublicAsset(heroArtCandidates('disney'));
 ---
 <div id="gm-boot" data-theme="disney" data-dur="2400" style="background:radial-gradient(circle at 50% 74%, #17225f, #060a22 72%)">
   <canvas id="disneyFw" class="dz-fw" aria-hidden="true"></canvas>
@@ -25,6 +29,9 @@ const covers = ['#1a3a8a', '#7a3f9e', '#b07a1f', '#2a7a8a', '#8a2a5a', '#3a5aaa'
 <canvas id="disneyStars" class="fx dz-stars" aria-hidden="true"></canvas>
 
 <header class="dz-billboard">
+  {heroArt && (
+    <div class="dz-hero-art" aria-hidden="true" style={`background-image:url('${withBase(heroArt)}')`}></div>
+  )}
   <div class="dz-billboard-inner">
     <p class="dz-kicker rv"><span aria-hidden="true">✦</span> {t.copy.kicker} <span aria-hidden="true">✦</span></p>
     <div class="dz-wordmark rv" data-float set:html={WORDMARKS.disney}></div>
@@ -96,8 +103,14 @@ const covers = ['#1a3a8a', '#7a3f9e', '#b07a1f', '#2a7a8a', '#8a2a5a', '#3a5aaa'
 
   .dz-stars { z-index: 0; }
 
-  .dz-billboard { position: relative; z-index: 2; min-height: 86vh; display: flex; align-items: center; padding: 70px 0 30px; }
-  .dz-billboard-inner { max-width: 1200px; width: 100%; margin: 0 auto; padding: 0 clamp(20px, 5vw, 56px); }
+  .dz-billboard { position: relative; z-index: 2; min-height: 86vh; display: flex; align-items: center; padding: 70px 0 30px; overflow: hidden; }
+  .dz-hero-art { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+    background-size: cover; background-position: right center; }
+  .dz-hero-art::before { content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, #0a0e2a 0%, #0a0e2a 40%, rgba(10,14,42,.55) 60%, transparent 75%); }
+  .dz-hero-art::after { content: ""; position: absolute; inset: 0;
+    background: linear-gradient(0deg, #0a0e2a 0%, transparent 32%); }
+  .dz-billboard-inner { position: relative; z-index: 1; max-width: 1200px; width: 100%; margin: 0 auto; padding: 0 clamp(20px, 5vw, 56px); }
   .dz-kicker { color: #E8C87A; font-family: 'Mulish'; font-weight: 700; letter-spacing: .28em; font-size: 13px; margin-bottom: 16px; }
   .dz-wordmark .wm { width: min(560px, 84vw); height: auto; filter: drop-shadow(0 0 34px rgba(0,168,225,.5)); }
   .dz-banner { font-family: 'Cinzel', serif; color: #f5f7ff; font-size: clamp(19px, 3vw, 30px); margin: 12px 0 10px; }
